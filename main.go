@@ -6,19 +6,13 @@ import (
   "net/http"
   "io/ioutil"
   "encoding/json"
+  "log"
   "flag"
 )
 
 const API_URL string = "http://finance.google.com/finance/info"
 
-type Quote struct {
-  TradePrice       float64 `json:"l,string"`
-  LastTradeTime    string  `json:"ltt"`
-  ChangePrice      float64 `json:"c,string"`
-  ChangePercentage float64 `json:"cp,string"`
-}
-
-func Decode(resp string, parser *[]Quote) {
+func Decode(resp string, parser *Quotes) {
   json.Unmarshal([]byte(resp), &parser)
 }
 
@@ -32,7 +26,7 @@ func getQuote(quote string) string {
   resp, err := http.Get(buildUrl(quote))
 
   if err != nil {
-    fmt.Println("Could not get quote")
+    log.Fatal("Could not get quote")
   }
 
   defer resp.Body.Close()
@@ -41,20 +35,20 @@ func getQuote(quote string) string {
   parsedResp := string(body)
 
   if err != nil {
-    fmt.Println("Arghhh")
+    log.Fatal("Cannot read body")
   }
-
-  fmt.Println(parsedResp)
 
   return strings.Replace(parsedResp, "//", "", -1)
 }
 
-func printQuote(quotes []Quote) {
+func printQuote(quotes Quotes) {
   for _, quote := range quotes {
-    fmt.Printf("Trade Price: %.3f, LastTradeTime: %s, ChangePrice: %.3f, ChangePercentage: %.3f",
-      quote.TradePrice,
+    fmt.Printf("%s :::::: Trade Price: %.2f, LastTradeTime: %s, ChangePrice: %.2f, ChangePercentage: %.2f",
+      quote.Symbol,
+      quote.getTradePrice(),
       quote.LastTradeTime,
-      quote.ChangePrice, quote.ChangePercentage)
+      quote.getChangePrice(),
+      quote.getChangePricePercentage())
 
     fmt.Printf("\n")
   }
@@ -63,20 +57,20 @@ func printQuote(quotes []Quote) {
 }
 
 func main() {
-  ch1 := make(chan []Quote)
 
-  quotes := flag.String("quotes", "GOOGL,TSLA", "stock symbols separate by quotes")
+  ch1 := make(chan Quotes)
+
+  query := flag.String("quotes", "GOOGL,TSLA", "stock symbols separate by quotes")
   flag.Parse()
 
   for {
 
-    go func (msg chan []Quote) {
-      test := make([]Quote, 0)
-      Decode(getQuote(*quotes), &test)
-      ch1 <- test
+    go func (msg chan Quotes) {
+      var quotes Quotes
+      Decode(getQuote(*query), &quotes)
+      ch1 <- quotes
     }(ch1)
 
-    result := <-ch1
-    printQuote(result)
+    printQuote(<-ch1)
   }
 }
