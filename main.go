@@ -8,9 +8,15 @@ import (
   "os"
   "bytes"
   "net/http"
+  "strconv"
   // "github.com/vaot/finance_now/yahoo_api"
   "github.com/vaot/finance_now/google_api"
+  "github.com/fzzy/radix/redis"
+  "time"
 )
+
+var client, _ = redis.Dial("tcp", "localhost:6379")
+const MAX_ALERTS int = 10
 
 func Decode(resp string, parser *Quotes) {
   json.Unmarshal([]byte(resp), &parser)
@@ -38,13 +44,15 @@ type SlackRequest struct {
   IconEmoji string `json:"icon_emoji"`
 }
 
-func SlackHandler(price string) {
+func SlackHandler(symbol string, price float64) {
   slackPayload := &SlackRequest{}
+
+  priceStr := strconv.FormatFloat(price, 'f', 3, 64)
 
   slackPayload.Channel = "#stocks"
   slackPayload.Username = "Finance Now"
   slackPayload.IconEmoji = ":moneybag:"
-  slackPayload.Text = strings.Join([]string{"TSLA stocks just reached the limit set: ", price}, "")
+  slackPayload.Text = strings.Join([]string{ symbol, " stocks just reached the limit set: ", priceStr }, "")
 
   jsonString, _ := json.Marshal(slackPayload)
   var SLACK_WEBHOOK_URL string = os.Getenv("SLACK_WEBHOOK_URL")
@@ -63,19 +71,47 @@ func MapQuotesToLimits(quotes *string, limits *string) map[string]string {
   return limitsMap
 }
 
-func Watcher(quotes Quotes, mapping *map[string]string) {
-  // To do
+func ShouldRunHandler(quote string) bool {
+  status,_ := client.Cmd("HGET", "alerts", quote).Str()
+  client.Cmd("HINCRBY", "alerts:times", quote, -1)
+  times,_ := client.Cmd("HGET", "alerts:times", quote).Int()
+  return (status == "running" && times > 0)
+}
+
+func Watcher(quotes Quotes, mapping map[string]string) {
+  for _, quote := range quotes {
+
+    if val, ok := mapping[quote.Symbol]; ok {
+
+      fVal,_ := strconv.ParseFloat(val, 32)
+
+      if fVal >= quote.getTradePrice() && ShouldRunHandler(quote.Symbol) {
+        time.Sleep(2000 * time.Millisecond)
+        go SlackHandler(quote.Symbol, quote.getTradePrice())
+      }
+
+    }
+
+  }
 }
 
 func main() {
   ch1 := make(chan Quotes)
 
   query := flag.String("quotes", "GOOGL,TSLA", "stock symbols separate by quotes")
-  limits := flag.String("watch", "234.4,280.3", "stock symbols separate by quotes")
+  limits := flag.String("limits", "234.4,280.3", "stock symbols separate by quotes")
+
+  flag.Parse()
+
+  formattedQuery := strings.ToUpper(*query)
+  query = &formattedQuery
 
   mapping := MapQuotesToLimits(query, limits)
 
-  flag.Parse()
+  for key,_ := range mapping {
+    client.Cmd("HSET", "alerts", key, "running")
+    client.Cmd("HSET", "alerts:times", key, MAX_ALERTS)
+  }
 
   for {
 
