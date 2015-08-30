@@ -8,6 +8,7 @@ import (
   // "encoding/json"
   "github.com/vaot/finance_now/google_api"
   "fmt"
+  "os"
 )
 
 func alertsHandler(r *http.Request) string {
@@ -48,5 +49,5 @@ func main() {
   m.Get("/alerts", alertsHandler)
   m.Get("/quotes", quotesHandler)
 
-  m.RunOnAddr(":6000")
+  m.RunOnAddr(":" + os.Getenv("PORT"))
 }
