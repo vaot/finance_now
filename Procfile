@@ -1,1 +1,1 @@
-web: ./hooks_api
+web: hooks_api
