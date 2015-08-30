@@ -3,11 +3,7 @@ package main
 import (
   "fmt"
   "strings"
-  "encoding/json"
   "flag"
-  "os"
-  "bytes"
-  "net/http"
   "strconv"
   // "github.com/vaot/finance_now/yahoo_api"
   "github.com/vaot/finance_now/google_api"
@@ -18,45 +14,19 @@ import (
 var client, _ = redis.Dial("tcp", "localhost:6379")
 const MAX_ALERTS int = 10
 
-func Decode(resp string, parser *Quotes) {
-  json.Unmarshal([]byte(resp), &parser)
-}
-
-func printQuote(quotes Quotes) {
+func printQuote(quotes google_api.Quotes) {
   for _, quote := range quotes {
     fmt.Printf("%s :::::: Trade Price: %.2f, LastTradeTime: %s, ChangePrice: %.2f, ChangePercentage: %.2f",
       quote.Symbol,
-      quote.getTradePrice(),
+      quote.GetTradePrice(),
       quote.LastTradeTime,
-      quote.getChangePrice(),
-      quote.getChangePricePercentage())
+      quote.GetChangePrice(),
+      quote.GetChangePricePercentage())
 
     fmt.Printf("\n")
   }
 
   fmt.Printf("\n")
-}
-
-type SlackRequest struct {
-  Channel string `json:"channel"`
-  Username string `json:"username"`
-  Text string `json:"text"`
-  IconEmoji string `json:"icon_emoji"`
-}
-
-func SlackHandler(symbol string, price float64) {
-  slackPayload := &SlackRequest{}
-
-  priceStr := strconv.FormatFloat(price, 'f', 3, 64)
-
-  slackPayload.Channel = "#stocks"
-  slackPayload.Username = "Finance Now"
-  slackPayload.IconEmoji = ":moneybag:"
-  slackPayload.Text = strings.Join([]string{ symbol, " stocks just reached the limit set: ", priceStr }, "")
-
-  jsonString, _ := json.Marshal(slackPayload)
-  var SLACK_WEBHOOK_URL string = os.Getenv("SLACK_WEBHOOK_URL")
-  http.Post(SLACK_WEBHOOK_URL, "application/json", bytes.NewReader(jsonString))
 }
 
 func MapQuotesToLimits(quotes *string, limits *string) map[string]string {
@@ -78,16 +48,16 @@ func ShouldRunHandler(quote string) bool {
   return (status == "running" && times > 0)
 }
 
-func Watcher(quotes Quotes, mapping map[string]string) {
+func Watcher(quotes google_api.Quotes, mapping map[string]string) {
   for _, quote := range quotes {
 
     if val, ok := mapping[quote.Symbol]; ok {
 
       fVal,_ := strconv.ParseFloat(val, 32)
 
-      if fVal >= quote.getTradePrice() && ShouldRunHandler(quote.Symbol) {
+      if quote.GetTradePrice() >= fVal && ShouldRunHandler(quote.Symbol) {
         time.Sleep(2000 * time.Millisecond)
-        go SlackHandler(quote.Symbol, quote.getTradePrice())
+        go SlackHandler(quote.Symbol, quote.GetTradePrice())
       }
 
     }
@@ -96,7 +66,7 @@ func Watcher(quotes Quotes, mapping map[string]string) {
 }
 
 func main() {
-  ch1 := make(chan Quotes)
+  ch1 := make(chan google_api.Quotes)
 
   query := flag.String("quotes", "GOOGL,TSLA", "stock symbols separate by quotes")
   limits := flag.String("limits", "234.4,280.3", "stock symbols separate by quotes")
@@ -115,9 +85,9 @@ func main() {
 
   for {
 
-    go func (msg chan Quotes) {
-      var quotes Quotes
-      Decode(google_api.GetQuote(*query), &quotes)
+    go func (msg chan google_api.Quotes) {
+      var quotes google_api.Quotes
+      google_api.Decode(google_api.GetQuote(*query), &quotes)
       ch1 <- quotes
     }(ch1)
 
