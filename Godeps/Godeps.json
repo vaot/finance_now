@@ -1,11 +1,24 @@
 {
 	"ImportPath": "github.com/vaot/finance_now",
 	"GoVersion": "go1.4.2",
+	"Packages": [
+		"./hooks_api"
+	],
 	"Deps": [
+		{
+			"ImportPath": "github.com/codegangsta/inject",
+			"Comment": "v1.0-rc1-10-g33e0aa1",
+			"Rev": "33e0aa1cb7c019ccc3fbe049a8262a6403d30504"
+		},
 		{
 			"ImportPath": "github.com/fzzy/radix/redis",
 			"Comment": "v0.5.6-2-g3528e87",
 			"Rev": "3528e87a910c6730810cec1be187f989d7d9442a"
+		},
+		{
+			"ImportPath": "github.com/go-martini/martini",
+			"Comment": "v1.0-134-g184178f",
+			"Rev": "184178ffc6b2f7b86b8b99c2a411de8771708a0a"
 		}
 	]
 }
