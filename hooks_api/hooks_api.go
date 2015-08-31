@@ -1,18 +1,20 @@
 package main
 
 import (
-	"github.com/vaot/finance_now/Godeps/_workspace/src/github.com/fzzy/radix/redis"
-	"github.com/vaot/finance_now/Godeps/_workspace/src/github.com/go-martini/martini"
+	"github.com/fzzy/radix/redis"
+	"github.com/go-martini/martini"
 	"net/http"
 	"strings"
 	// "encoding/json"
 	"fmt"
 	"github.com/vaot/finance_now/google_api"
 	"os"
+  "net/url"
 )
 
 func alertsHandler(r *http.Request) string {
-	client, _ := redis.Dial("tcp", os.Getenv("REDIS_URL"))
+  redisUrl, _ := url.Parse(os.Getenv("REDIS_URL"))
+	client, _ := redis.Dial("tcp", redisUrl.Host)
 
 	qs := r.URL.Query()
 	fmt.Println(qs.Get("text"))
