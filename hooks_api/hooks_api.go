@@ -12,7 +12,7 @@ import (
 )
 
 func alertsHandler(r *http.Request) string {
-  client, _ := redis.Dial("tcp", "localhost:6379")
+  client, _ := redis.Dial("tcp", os.Getenv("REDIS_URL"))
 
   qs := r.URL.Query()
   fmt.Println(qs.Get("text"))
