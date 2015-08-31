@@ -9,9 +9,10 @@ import (
   "github.com/vaot/finance_now/google_api"
   "github.com/fzzy/radix/redis"
   "time"
+  "os"
 )
 
-var client, _ = redis.Dial("tcp", "localhost:6379")
+var client, _ = redis.Dial("tcp", os.Getenv("REDIS_URL"))
 const MAX_ALERTS int = 10
 
 func printQuote(quotes google_api.Quotes) {
