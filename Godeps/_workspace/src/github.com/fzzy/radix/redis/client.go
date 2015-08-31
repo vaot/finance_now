@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fzzy/radix/redis/resp"
+	"github.com/vaot/finance_now/Godeps/_workspace/src/github.com/fzzy/radix/redis/resp"
 )
 
 const (
