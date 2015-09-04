@@ -49,6 +49,8 @@ func ShouldRunHandler(quote string) bool {
   status,_ := client.Cmd("HGET", "alerts", quote).Str()
   client.Cmd("HINCRBY", "alerts:times", quote, -1)
   times,_ := client.Cmd("HGET", "alerts:times", quote).Int()
+  fmt.Println(times)
+  fmt.Println(status)
   return (status == "running" && times > 0)
 }
 
@@ -59,6 +61,7 @@ func Watcher(quotes google_api.Quotes, mapping map[string]string) {
 
       fVal,_ := strconv.ParseFloat(val, 32)
       fmt.Println("Watching for limit: " + quote.Symbol + " " + val)
+      fmt.Println(ShouldRunHandler(quote.Symbol))
       if quote.GetTradePrice() >= fVal && ShouldRunHandler(quote.Symbol) {
         time.Sleep(2000 * time.Millisecond)
         go SlackHandler(quote.Symbol, quote.GetTradePrice())
