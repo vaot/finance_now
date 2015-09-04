@@ -50,5 +50,8 @@ func main() {
 	m.Get("/alerts", alertsHandler)
 	m.Get("/quotes", quotesHandler)
 
+	static := martini.Static("static", martini.StaticOptions{Fallback: "/index.html"})
+	m.NotFound(static, http.NotFound)
+
 	m.RunOnAddr(":" + os.Getenv("PORT"))
 }
