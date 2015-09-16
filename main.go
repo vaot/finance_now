@@ -85,7 +85,7 @@ func main() {
 
   mapping := MapQuotesToLimits(query, limits)
 
-  authErr := client.Cmd("AUTH", os.Getenv("REDIS_PASSWORD"))
+  _, authErr := client.Cmd("AUTH", os.Getenv("REDIS_PASSWORD")).Str()
 
   if authErr != nil {
     panic(authErr)
