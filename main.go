@@ -87,9 +87,13 @@ func main() {
 
   fmt.Println("Alerts Handler" + redisUrl.Host)
 
-  for key,_ := range mapping {
-    client.Cmd("HSET", "alerts", key, "running")
+  for key, _ := range mapping {
+    first_err := client.Cmd("HSET", "alerts", key, "running")
     client.Cmd("HSET", "alerts:times", key, MAX_ALERTS)
+
+    if first_err != nil {
+      panic(first_err)
+    }
   }
 
   for {
