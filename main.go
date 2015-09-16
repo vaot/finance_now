@@ -92,8 +92,8 @@ func main() {
   }
 
   for key, _ := range mapping {
-    _, alert_err := client.Cmd("HSET", "alerts", key, "running").Str()
-    _, alert_time_err := client.Cmd("HSET", "alerts:times", key, MAX_ALERTS).Str()
+    _, alert_err := client.Cmd("HSET", "alerts", key, "running").Int()
+    _, alert_time_err := client.Cmd("HSET", "alerts:times", key, MAX_ALERTS).Int()
 
     if alert_err != nil {
       panic(alert_err)
