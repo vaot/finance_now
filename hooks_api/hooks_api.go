@@ -16,6 +16,8 @@ func alertsHandler(r *http.Request) string {
   redisUrl, _ := url.Parse(os.Getenv("REDIS_URL"))
 	client, _ := redis.Dial("tcp", redisUrl.Host)
 
+	fmt.Println("Alerts Handler" + redisUrl.Host)
+
 	qs := r.URL.Query()
 	fmt.Println(qs.Get("text"))
 	err := client.Cmd("HSET", "alerts", strings.ToUpper(qs.Get("text")), qs.Get("action")).Err
@@ -51,7 +53,8 @@ func main() {
 	m.Get("/quotes", quotesHandler)
 
 	static := martini.Static("static", martini.StaticOptions{Fallback: "/index.html"})
+	m.Use(static)
 	m.NotFound(static, http.NotFound)
 
-	m.RunOnAddr(":" + os.Getenv("PORT"))
+	m.Run()
 }

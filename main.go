@@ -61,7 +61,7 @@ func Watcher(quotes google_api.Quotes, mapping map[string]string) {
 
       fVal,_ := strconv.ParseFloat(val, 32)
       fmt.Println("Watching for limit: " + quote.Symbol + " " + val)
-      fmt.Println(ShouldRunHandler(quote.Symbol))
+
       if quote.GetTradePrice() >= fVal && ShouldRunHandler(quote.Symbol) {
         time.Sleep(2000 * time.Millisecond)
         go SlackHandler(quote.Symbol, quote.GetTradePrice())
@@ -84,6 +84,8 @@ func main() {
   query = &formattedQuery
 
   mapping := MapQuotesToLimits(query, limits)
+
+  fmt.Println("Alerts Handler" + redisUrl.Host)
 
   for key,_ := range mapping {
     client.Cmd("HSET", "alerts", key, "running")
