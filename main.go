@@ -85,14 +85,22 @@ func main() {
 
   mapping := MapQuotesToLimits(query, limits)
 
-  fmt.Println("Alerts Handler" + redisUrl.Host)
+  authErr := client.Cmd("AUTH", os.Getenv("REDIS_PASSWORD"))
+
+  if authErr != nil {
+    panic(authErr)
+  }
 
   for key, _ := range mapping {
-    first_err := client.Cmd("HSET", "alerts", key, "running")
-    client.Cmd("HSET", "alerts:times", key, MAX_ALERTS)
+    alert_err := client.Cmd("HSET", "alerts", key, "running")
+    alert_time_err := client.Cmd("HSET", "alerts:times", key, MAX_ALERTS)
 
-    if first_err != nil {
-      panic(first_err)
+    if alert_err != nil {
+      panic(alert_err)
+    }
+
+    if alert_time_err != nil {
+      panic(alert_time_err)
     }
   }
 
