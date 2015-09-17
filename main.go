@@ -33,10 +33,10 @@ func printQuote(quotes google_api.Quotes) {
   fmt.Printf("\n")
 }
 
-func MapQuotesToLimits(quotes *string, limits *string) map[string]string {
+func MapQuotesToArgs(quotes *string, args *string) map[string]string {
   limitsMap := make(map[string]string)
   quotesArray := strings.Split(*quotes, ",")
-  limitsArray := strings.Split(*limits, ",")
+  limitsArray := strings.Split(*args, ",")
 
   for i := 0; i < len(quotesArray); i++ {
     limitsMap[quotesArray[i]] = limitsArray[i]
@@ -54,15 +54,15 @@ func ShouldRunHandler(quote string) bool {
   return (status == "running" && times > 0)
 }
 
-func Watcher(quotes google_api.Quotes, mapping map[string]string) {
+func Watcher(quotes google_api.Quotes, mappingLimits map[string]string, mappingDirections map[string]string) {
   for _, quote := range quotes {
 
-    if val, ok := mapping[quote.Symbol]; ok {
+    if val, ok := mappingLimits[quote.Symbol]; ok {
 
       fVal,_ := strconv.ParseFloat(val, 32)
       fmt.Println("Watching for limit: " + quote.Symbol + " " + val)
 
-      if os.Getenv("STOCKS_DIRECTION") == "UP" {
+      if mappingDirections[quote.Symbol] == "UP" {
         if quote.GetTradePrice() >= fVal && ShouldRunHandler(quote.Symbol) {
           time.Sleep(2000 * time.Millisecond)
           go SlackHandler(quote.Symbol, quote.GetTradePrice())
@@ -84,13 +84,15 @@ func main() {
 
   query := flag.String("quotes", "GOOGL,TSLA", "stock symbols separate by quotes")
   limits := flag.String("limits", "234.4,280.3", "stock symbols separate by quotes")
+  directions := flag.String("directions", "UP,DOWN", "Direction separate by quotes")
 
   flag.Parse()
 
   formattedQuery := strings.ToUpper(*query)
   query = &formattedQuery
 
-  mapping := MapQuotesToLimits(query, limits)
+  mappingLimits := MapQuotesToArgs(query, limits)
+  mappingDirections := MapQuotesToArgs(query, directions)
 
   _, authErr := client.Cmd("AUTH", os.Getenv("REDIS_PASSWORD")).Str()
 
@@ -98,7 +100,7 @@ func main() {
     panic(authErr)
   }
 
-  for key, _ := range mapping {
+  for key, _ := range mappingLimits {
     _, alert_err := client.Cmd("HSET", "alerts", key, "running").Int()
     _, alert_time_err := client.Cmd("HSET", "alerts:times", key, MAX_ALERTS).Int()
 
@@ -121,7 +123,7 @@ func main() {
 
     quote := <-ch1
 
-    Watcher(quote, mapping)
+    Watcher(quote, mappingLimits, mappingDirections)
     printQuote(quote)
   }
 }
