@@ -62,9 +62,16 @@ func Watcher(quotes google_api.Quotes, mapping map[string]string) {
       fVal,_ := strconv.ParseFloat(val, 32)
       fmt.Println("Watching for limit: " + quote.Symbol + " " + val)
 
-      if quote.GetTradePrice() >= fVal && ShouldRunHandler(quote.Symbol) {
-        time.Sleep(2000 * time.Millisecond)
-        go SlackHandler(quote.Symbol, quote.GetTradePrice())
+      if os.Getenv("STOCKS_DIRECTION") == "UP" {
+        if quote.GetTradePrice() >= fVal && ShouldRunHandler(quote.Symbol) {
+          time.Sleep(2000 * time.Millisecond)
+          go SlackHandler(quote.Symbol, quote.GetTradePrice())
+        }
+      } else {
+        if quote.GetTradePrice() <= fVal && ShouldRunHandler(quote.Symbol) {
+          time.Sleep(2000 * time.Millisecond)
+          go SlackHandler(quote.Symbol, quote.GetTradePrice())
+        }
       }
 
     }
