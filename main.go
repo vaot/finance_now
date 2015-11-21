@@ -48,9 +48,8 @@ func MapQuotesToArgs(quotes *string, args *string) map[string]string {
 func ShouldRunHandler(quote string) bool {
   status,_ := client.Cmd("HGET", "alerts", quote).Str()
   client.Cmd("HINCRBY", "alerts:times", quote, -1)
+
   times,_ := client.Cmd("HGET", "alerts:times", quote).Int()
-  fmt.Println(times)
-  fmt.Println(status)
   return (status == "running" && times > 0)
 }
 

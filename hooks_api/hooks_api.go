@@ -49,12 +49,11 @@ func quotesHandler(r *http.Request) string {
 func main() {
 	m := martini.Classic()
 
+	static := martini.Static("static", martini.StaticOptions{Fallback: "/index.html"})
+	m.NotFound(static, http.NotFound)
+
 	m.Get("/alerts", alertsHandler)
 	m.Get("/quotes", quotesHandler)
-
-	static := martini.Static("static", martini.StaticOptions{Fallback: "/index.html"})
-	m.Use(static)
-	m.NotFound(static, http.NotFound)
 
 	m.Run()
 }
